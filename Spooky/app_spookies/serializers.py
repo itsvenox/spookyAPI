@@ -54,7 +54,9 @@ class SpookyCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SpookyModel
-        fields = ('id', 'content', 'created_at', 'expiration_time', 'friends')
+        fields = ('id', 'sender', 'content', 'created_at', 'expiration_time', 'friends')
+
+
 
 
 class ReceivedSpookySerializer(serializers.ModelSerializer):
