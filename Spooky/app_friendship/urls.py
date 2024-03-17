@@ -1,8 +1,6 @@
-# private urls
+# friendship/urls.py
 from django.urls import path
-
 from . import views
-
 urlpatterns = [
     path('send-friend-request/', views.sendFriendRequestAPI, name='send friend request'),
     path('handle-friendship-request/', views.handleFriendshipRequestAPI, name='handle friend request'),

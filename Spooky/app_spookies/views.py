@@ -5,11 +5,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+
+from app_friendship.models import Friendship
 from .models import SpookyModel
-from .serializers import ReceivedSpookySerializer, SpookySerializer
+from .serializers import ReceivedSpookySerializer, SpookyListSerializer, SpookyCreateSerializer
 from django.utils import timezone
 
-
+from django.db.models import Q
 from django.contrib.auth.models import User
 
 
@@ -21,10 +23,13 @@ def create_spooky(request):
     except User.DoesNotExist:
         return Response({"message": "Invalid sender ID."}, status=status.HTTP_400_BAD_REQUEST)
 
-    request.data.update({'sender': sender.id})
-    request.data.update({'expiration_time': timezone.now() + timedelta(minutes=3)})
-    
-    serializer = SpookySerializer(data=request.data, context={'request': request})
+    # Update the sender field directly to the user object or its ID
+    request.data['sender'] = sender.id
+
+    # Add expiration time to the request data
+    request.data['expiration_time'] = timezone.now() + timedelta(minutes=3)
+
+    serializer = SpookyCreateSerializer(data=request.data, context={'request': request})
     
     if serializer.is_valid():
         # Extract friend usernames from request data
@@ -35,7 +40,8 @@ def create_spooky(request):
         for username in friend_usernames:
             try:
                 friend = User.objects.get(username=username)
-                if friend in sender.friends.all():  # Assuming there's a ManyToManyField called 'friends' on the User model
+                # Check if there exists a Friendship object between sender and friend
+                if Friendship.objects.filter(Q(user1=sender, user2=friend) | Q(user1=friend, user2=sender)).exists():
                     friends.append(friend)
                 else:
                     return Response({"message": f"{username} is not a friend of the current user."}, status=status.HTTP_400_BAD_REQUEST)
@@ -60,7 +66,7 @@ def create_spooky(request):
                 if latest_spooky:
                     latest_spookies[friend.username] = latest_spooky.id
             
-            serialized_spooky = SpookySerializer(instance=spooky)
+            serialized_spooky = SpookyCreateSerializer(instance=spooky)
             response_data = {
                 "spooky": serialized_spooky.data,
                 "latest_spookies": latest_spookies
@@ -72,7 +78,6 @@ def create_spooky(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_spookies(request):
@@ -80,16 +85,15 @@ def list_spookies(request):
     spookies_sent = SpookyModel.objects.filter(sender=user)
     spookies_received = SpookyModel.objects.filter(friends=user)
 
-    # Serialize received spookies with specific fields
-    serializer_received = ReceivedSpookySerializer(spookies_received, many=True)
+    sent_spookies_data = SpookyListSerializer(spookies_sent, many=True).data
+    received_spookies_data = ReceivedSpookySerializer(spookies_received, many=True).data
 
     return Response(
         {
-            'sent_spookies': SpookySerializer(spookies_sent, many=True).data,
-            'received_spookies': serializer_received.data
+            'sent_spookies': sent_spookies_data,
+            'received_spookies': received_spookies_data
         }, status=status.HTTP_200_OK
     )
-
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -99,7 +103,6 @@ def delete_spooky(request, spooky_id):
     except SpookyModel.DoesNotExist:
         return Response({"message": "Spooky message does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-    # Check if the authenticated user is the sender of the spooky message
     if spooky.sender != request.user:
         return Response({"message": "You are not authorized to delete this spooky message."}, status=status.HTTP_403_FORBIDDEN)
 

@@ -11,7 +11,6 @@ from django.db import models
 from utils import calculate_duration
 from datetime import timedelta
 
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def sendFriendRequestAPI(request):
@@ -75,12 +74,12 @@ def handleFriendshipRequestAPI(request):
             friend_request.delete()
             return Response({'message': 'Friend request rejected'}, status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
     except User.DoesNotExist:
-        return Response({'error': 'Sender user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Sender user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
     except FriendRequest.DoesNotExist:
-        return Response({'error': 'Friend request does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Friend request does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -104,10 +103,10 @@ def removeFriendAPI(request):
             friendship.delete()
             return Response({'message': 'Friend removed successfully'}, status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'Friendship does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Friendship does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
     except User.DoesNotExist:
-        return Response({'error': 'Friend user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Friend user does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
