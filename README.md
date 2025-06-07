@@ -285,5 +285,3 @@ curl -X POST -H "Authorization: Token <token>" -d "message=Boo!&friends=username
 ## Conclusion
 
 If you have any questions or encounter issues, feel free to contact me: @itsvenox .
-
-Happy Spookying with Spookies!
